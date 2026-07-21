@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Watchlist | MacroMind</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Geist:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        body {
+            font-family: 'Geist', sans-serif;
+            background-color: #061423;
+            color: #d6e4f9;
+        }
+        .mono-text {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .glass-card {
+            background: rgba(26, 46, 69, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid #1E3A52;
+        }
+        .watchlist-row:hover {
+            background-color: rgba(93, 213, 250, 0.05);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-surface": "#d6e4f9",
+                      "on-error": "#690005",
+                      "surface-variant": "#283646",
+                      "error": "#ffb4ab",
+                      "on-surface-variant": "#bdc8ce",
+                      "surface-bright": "#2d3a4a",
+                      "tertiary-fixed-dim": "#aec9e7",
+                      "on-tertiary-container": "#16324a",
+                      "on-secondary": "#183347",
+                      "surface-dim": "#061423",
+                      "surface-container-high": "#1e2b3b",
+                      "primary-container": "#0ea5c9",
+                      "inverse-surface": "#d6e4f9",
+                      "inverse-on-surface": "#243141",
+                      "on-tertiary-fixed-variant": "#2e4962",
+                      "outline": "#879398",
+                      "on-background": "#d6e4f9",
+                      "primary-fixed": "#b6eaff",
+                      "surface-container-lowest": "#020f1e",
+                      "secondary-container": "#30495f",
+                      "on-secondary-container": "#9eb8d2",
+                      "secondary-fixed": "#cce5ff",
+                      "primary-fixed-dim": "#5dd5fa",
+                      "tertiary-fixed": "#cee5ff",
+                      "background": "#061423",
+                      "on-primary": "#003543",
+                      "surface-container": "#132030",
+                      "error-container": "#93000a",
+                      "secondary": "#afc9e4",
+                      "on-error-container": "#ffdad6",
+                      "surface": "#061423",
+                      "on-primary-fixed-variant": "#004e60",
+                      "on-primary-fixed": "#001f28",
+                      "on-tertiary-fixed": "#001d32",
+                      "on-primary-container": "#003543",
+                      "surface-tint": "#5dd5fa",
+                      "outline-variant": "#3d484d",
+                      "primary": "#5dd5fa",
+                      "tertiary": "#aec9e7",
+                      "on-secondary-fixed-variant": "#30495f",
+                      "surface-container-highest": "#283646",
+                      "secondary-fixed-dim": "#afc9e4",
+                      "surface-container-low": "#0f1c2c",
+                      "inverse-primary": "#00677f",
+                      "on-secondary-fixed": "#001e31",
+                      "tertiary-container": "#809bb7",
+                      "on-tertiary": "#16334a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-mobile": "16px",
+                      "sm": "8px",
+                      "gutter": "20px",
+                      "md": "16px",
+                      "xs": "4px",
+                      "margin-desktop": "40px",
+                      "lg": "24px",
+                      "base": "4px",
+                      "xl": "32px",
+                      "2xl": "48px"
+              },
+              "fontFamily": {
+                      "headline-lg": ["Geist"],
+                      "headline-lg-mobile": ["Geist"],
+                      "label-md": ["JetBrains Mono"],
+                      "title-lg": ["Geist"],
+                      "body-lg": ["Geist"],
+                      "display": ["Geist"],
+                      "label-sm": ["JetBrains Mono"],
+                      "body-md": ["Geist"],
+                      "headline-md": ["Geist"]
+              },
+              "fontSize": {
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                      "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "display": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-sm": ["10px", {"lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-surface text-on-surface">
+<!-- TopNavBar -->
+<nav class="sticky top-0 z-50 flex justify-between items-center w-full px-margin-desktop bg-surface dark:bg-surface h-16 border-b border-outline-variant dark:border-outline-variant">
+<div class="flex items-center gap-xl">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary">MacroMind</span>
+<div class="hidden md:flex gap-lg">
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary transition-colors duration-200" href="#">Dashboard</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary transition-colors duration-200" href="#">Events</a>
+<a class="font-label-md text-label-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary transition-colors duration-200" href="#">AI Picks</a>
+<a class="font-label-md text-label-md text-primary dark:text-primary border-b-2 border-primary pb-1 transition-colors duration-200" href="#">Watchlist</a>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-sm text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-sm text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-secondary-container overflow-hidden">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A professional business avatar for a financial analyst, presented as a clean minimalist vector illustration. The color palette features cool tones of teal and charcoal, matching a dark fintech user interface. The character has a sharp, focused expression suitable for a technical environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-by7FJ5Q15gZAsNu4P-x_QC7RCidBKQRPjjAiisJfU7iFek3ix_2xHDzmJB2B7aJ8BggG4GLOBqfbHupAZGSwZp-pci5e8c-2wnFAiMxh3hf6H37X3XJ91v1S8JKSDkyI4zx6PR69FJ7nyu6arOkiFLqE4uarKOevzBQcLU8yfMmYtvyOyTnMTv2oPhVuzRBWF_WzNvVPDao6cgr_E9cS5k3LwhmAn430bBRLmzn7dnx6SK5ud-hRElYAiF0itYZsxZ2VkFOYgxg"/>
+</div>
+</div>
+</nav>
+<!-- SideNavBar (Hidden on Mobile) -->
+<aside class="hidden lg:flex flex-col fixed left-0 top-16 h-[calc(100vh-64px)] w-64 p-md bg-surface-container-low dark:bg-surface-container-low border-r border-outline-variant dark:border-outline-variant">
+<div class="flex flex-col gap-xs flex-grow">
+<a class="flex items-center gap-md p-md text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="show_chart">show_chart</span>
+<span class="font-label-md text-label-md">Market Ticker</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="font-label-md text-label-md">Analytics</span>
+</a>
+<a class="flex items-center gap-md p-md bg-secondary-container dark:bg-secondary-container text-on-secondary-container dark:text-on-secondary-container rounded-lg font-bold scale-98 transition-transform" href="#">
+<span class="material-symbols-outlined fill-icon" data-icon="visibility">visibility</span>
+<span class="font-label-md text-label-md">Watchlist</span>
+</a>
+</div>
+<div class="border-t border-outline-variant pt-md flex flex-col gap-xs">
+<a class="flex items-center gap-md p-md text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-variant dark:hover:bg-surface-variant rounded-lg transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="lg:ml-64 p-margin-mobile md:p-margin-desktop min-h-screen">
+<div class="max-w-6xl mx-auto flex flex-col gap-xl">
+<!-- Header Section -->
+<header class="flex flex-col md:flex-row md:items-end justify-between gap-md">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Market Watchlist</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Real-time tracking of your selected assets and high-impact macro alerts.</p>
+</div>
+<!-- Search Bar -->
+<div class="relative w-full md:w-[400px]">
+<div class="absolute inset-y-0 left-0 pl-md flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline" data-icon="search">search</span>
+</div>
+<input class="w-full bg-surface-container border border-outline-variant text-on-surface text-body-md rounded-xl pl-12 pr-md py-3 focus:outline-none focus:border-primary transition-colors" placeholder="Search tickers to add (e.g. TCS, AAPL, BTC)" type="text"/>
+</div>
+</header>
+<!-- Bento Layout Content -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-gutter">
+<!-- Left: Watchlist Table (Col Span 2) -->
+<section class="xl:col-span-2 flex flex-col gap-md">
+<div class="glass-card rounded-xl overflow-hidden">
+<div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-container-high/50">
+<h2 class="font-title-lg text-title-lg flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="list_alt">list_alt</span>
+                                Your Assets
+                            </h2>
+<button class="text-primary font-label-md text-label-md flex items-center gap-xs hover:underline">
+<span class="material-symbols-outlined text-[18px]" data-icon="filter_list">filter_list</span>
+                                Sort by Performance
+                            </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-on-surface-variant border-b border-outline-variant bg-surface-container/30"><th class="px-md py-4 font-label-md text-label-md">Ticker</th><th class="px-md py-4 font-label-md text-label-md">Company</th><th class="px-md py-4 font-label-md text-label-md text-right">Price</th><th class="px-md py-4 font-label-md text-label-md text-right">Change</th><th class="px-md py-4 font-label-md text-label-md text-center">Alert</th></tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<tr class="watchlist-row transition-all group"><td class="px-md py-4 mono-text text-label-md text-on-surface-variant">RELIANCE</td><td class="px-md py-4"><div class="flex items-center gap-sm"><div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs text-primary">R</div><span class="font-body-md text-body-md font-semibold">Reliance</span></div></td><td class="px-md py-4 text-right mono-text font-medium">2,985.40</td><td class="px-md py-4 text-right"><span class="px-2 py-1 rounded bg-green-500/10 text-green-400 font-label-sm text-label-sm border border-green-500/20">+1.2%</span></td><td class="px-md py-4 text-center"><button class="text-primary hover:scale-110 transition-transform"><span class="material-symbols-outlined fill-icon" data-icon="notifications_active">notifications_active</span></button></td></tr>
+<tr class="watchlist-row transition-all group"><td class="px-md py-4 mono-text text-label-md text-on-surface-variant">HDFCBANK</td><td class="px-md py-4"><div class="flex items-center gap-sm"><div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs text-primary">H</div><span class="font-body-md text-body-md font-semibold">HDFC Bank</span></div></td><td class="px-md py-4 text-right mono-text font-medium">1,532.10</td><td class="px-md py-4 text-right"><span class="px-2 py-1 rounded bg-error/10 text-error font-label-sm text-label-sm border border-error/20">-0.5%</span></td><td class="px-md py-4 text-center"><button class="text-primary hover:scale-110 transition-transform"><span class="material-symbols-outlined fill-icon" data-icon="notifications_active">notifications_active</span></button></td></tr>
+<tr class="watchlist-row transition-all group"><td class="px-md py-4 mono-text text-label-md text-on-surface-variant">INFY</td><td class="px-md py-4"><div class="flex items-center gap-sm"><div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs text-primary">I</div><span class="font-body-md text-body-md font-semibold">Infosys</span></div></td><td class="px-md py-4 text-right mono-text font-medium">1,420.55</td><td class="px-md py-4 text-right"><span class="px-2 py-1 rounded bg-green-500/10 text-green-400 font-label-sm text-label-sm border border-green-500/20">+0.8%</span></td><td class="px-md py-4 text-center"><button class="text-on-surface-variant/40 hover:text-primary transition-colors"><span class="material-symbols-outlined" data-icon="notifications">notifications</span></button></td></tr>
+<tr class="watchlist-row transition-all group border-b-0"><td class="px-md py-4 mono-text text-label-md text-on-surface-variant">TATAMOTORS</td><td class="px-md py-4"><div class="flex items-center gap-sm"><div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center font-bold text-xs text-primary">T</div><span class="font-body-md text-body-md font-semibold">Tata Motors</span></div></td><td class="px-md py-4 text-right mono-text font-medium">980.20</td><td class="px-md py-4 text-right"><span class="px-2 py-1 rounded bg-green-500/10 text-green-400 font-label-sm text-label-sm border border-green-500/20">+3.4%</span></td><td class="px-md py-4 text-center"><button class="text-primary hover:scale-110 transition-transform"><span class="material-symbols-outlined fill-icon" data-icon="notifications_active">notifications_active</span></button></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Macro Chart Visualization -->
+<div class="glass-card rounded-xl p-lg flex flex-col gap-md"><div class="flex justify-between items-start"><div class="flex items-center gap-xs"><div class="flex items-center gap-xs px-2 py-1 rounded bg-secondary-container/50 text-on-secondary-container"><span class="material-symbols-outlined text-[16px]" data-icon="account_balance">account_balance</span><span class="font-label-sm text-label-sm">RBI Policy</span></div><span class="px-2 py-0.5 rounded bg-primary/20 text-primary font-label-sm text-label-sm">High</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">10m ago</span></div><div><h4 class="font-body-lg text-body-lg font-bold">RBI Policy Update</h4><p class="font-body-md text-body-md text-on-surface-variant mt-xs">Interest rate pause confirmed by governor.</p></div><div class="pt-sm border-t border-outline-variant flex items-center justify-between"><span class="font-label-md text-label-md text-on-surface-variant">Impacting: HDFCBANK</span><a class="text-primary font-bold text-label-md flex items-center gap-xs hover:underline" href="#">View Details <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span></a></div></div>
+</section>
+<!-- Right: Active Alerts & Stats -->
+<section class="flex flex-col gap-gutter">
+<div class="flex items-center justify-between">
+<h2 class="font-title-lg text-title-lg flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="bolt">bolt</span>
+                            Active Alerts
+                        </h2>
+<span class="px-2 py-0.5 rounded-full bg-primary/20 text-primary font-label-sm text-label-sm">2 New</span>
+</div>
+<!-- Alert Card 1 -->
+<div class="glass-card rounded-xl p-md flex flex-col gap-sm border-l-4 border-l-primary hover:bg-surface-container-high/50 transition-colors cursor-pointer"><div class="flex justify-between items-start"><div class="flex items-center gap-xs"><div class="flex items-center gap-xs px-2 py-1 rounded bg-secondary-container/50 text-on-secondary-container"><span class="material-symbols-outlined text-[16px]" data-icon="account_balance">account_balance</span><span class="font-label-sm text-label-sm">RBI Policy</span></div><span class="px-2 py-0.5 rounded bg-primary/20 text-primary font-label-sm text-label-sm">High</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">10m ago</span></div><div><h4 class="font-body-lg text-body-lg font-bold">RBI Policy Update</h4><p class="font-body-md text-body-md text-on-surface-variant mt-xs">Interest rate pause confirmed by governor.</p></div><div class="pt-sm border-t border-outline-variant flex items-center justify-between"><span class="font-label-md text-label-md text-on-surface-variant">Impacting: HDFCBANK</span><a class="text-primary font-bold text-label-md flex items-center gap-xs hover:underline" href="#">View Details <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span></a></div></div>
+<!-- Alert Card 2 -->
+<div class="glass-card rounded-xl p-md flex flex-col gap-sm border-l-4 border-l-secondary hover:bg-surface-container-high/50 transition-colors cursor-pointer"><div class="flex justify-between items-start"><div class="flex items-center gap-xs"><div class="flex items-center gap-xs px-2 py-1 rounded bg-secondary-container/50 text-on-secondary-container"><span class="material-symbols-outlined text-[16px]" data-icon="oil_barrel">oil_barrel</span><span class="font-label-sm text-label-sm">Commodities</span></div><span class="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">Medium</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">1h ago</span></div><div><h4 class="font-body-lg text-body-lg font-bold">Crude Oil Surge</h4><p class="font-body-md text-body-md text-on-surface-variant mt-xs">Potential impact on input costs for manufacturing sectors.</p></div><div class="pt-sm border-t border-outline-variant flex items-center justify-between"><span class="font-label-md text-label-md text-on-surface-variant">Impacting: TATAMOTORS</span><a class="text-primary font-bold text-label-md flex items-center gap-xs hover:underline" href="#">View Details <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span></a></div></div>
+<!-- Global Market Insight Card -->
+<div class="bg-primary-container rounded-xl p-lg text-on-primary-container mt-auto">
+<div class="flex items-center gap-sm mb-md">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span class="font-label-md text-label-md font-bold uppercase tracking-widest">AI Intelligence</span>
+</div>
+<p class="font-title-lg text-title-lg font-bold leading-tight">Bullish sentiment detected in tech stocks following recent earnings.</p>
+<button class="mt-lg w-full bg-on-primary-container text-primary-container font-bold py-2 rounded-lg hover:opacity-90 transition-opacity">View Deep Dive</button>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Bottom Nav for Mobile -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-high flex justify-around items-center px-md z-50">
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="text-[10px] font-medium">Dash</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="show_chart">show_chart</span>
+<span class="text-[10px] font-medium">Market</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined fill-icon" data-icon="visibility">visibility</span>
+<span class="text-[10px] font-bold">Watch</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-[10px] font-medium">More</span>
+</button>
+</nav>
+<script>
+        // Simple interactivity for the bell icons
+        document.querySelectorAll('.material-symbols-outlined[data-icon*="notifications"]').forEach(icon => {
+            icon.parentElement.addEventListener('click', function(e) {
+                e.preventDefault();
+                const isBellActive = this.querySelector('span').innerText === 'notifications_active';
+                if (isBellActive) {
+                    this.querySelector('span').innerText = 'notifications';
+                    this.querySelector('span').classList.remove('fill-icon');
+                    this.classList.replace('text-primary', 'text-on-surface-variant/40');
+                } else {
+                    this.querySelector('span').innerText = 'notifications_active';
+                    this.querySelector('span').classList.add('fill-icon');
+                    this.classList.replace('text-on-surface-variant/40', 'text-primary');
+                }
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MacroMind | Financial Intelligence Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=JetBrains+Mono:wght@100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ticker-scroll {
+            display: flex;
+            width: fit-content;
+            animation: ticker 30s linear infinite;
+        }
+        @keyframes ticker {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .glass-card {
+            background: rgba(26, 46, 69, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid #1E3A52;
+        }
+        body {
+            background-color: #061423;
+            color: #d6e4f9;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#d6e4f9",
+                        "on-error": "#690005",
+                        "surface-variant": "#283646",
+                        "error": "#ffb4ab",
+                        "on-surface-variant": "#bdc8ce",
+                        "surface-bright": "#2d3a4a",
+                        "tertiary-fixed-dim": "#aec9e7",
+                        "on-tertiary-container": "#16324a",
+                        "on-secondary": "#183347",
+                        "surface-dim": "#061423",
+                        "surface-container-high": "#1e2b3b",
+                        "primary-container": "#0ea5c9",
+                        "inverse-surface": "#d6e4f9",
+                        "inverse-on-surface": "#243141",
+                        "on-tertiary-fixed-variant": "#2e4962",
+                        "outline": "#879398",
+                        "on-background": "#d6e4f9",
+                        "primary-fixed": "#b6eaff",
+                        "surface-container-lowest": "#020f1e",
+                        "secondary-container": "#30495f",
+                        "on-secondary-container": "#9eb8d2",
+                        "secondary-fixed": "#cce5ff",
+                        "primary-fixed-dim": "#5dd5fa",
+                        "tertiary-fixed": "#cee5ff",
+                        "background": "#061423",
+                        "on-primary": "#003543",
+                        "surface-container": "#132030",
+                        "error-container": "#93000a",
+                        "secondary": "#afc9e4",
+                        "on-error-container": "#ffdad6",
+                        "surface": "#061423",
+                        "on-primary-fixed-variant": "#004e60",
+                        "on-primary-fixed": "#001f28",
+                        "on-tertiary-fixed": "#001d32",
+                        "on-primary-container": "#003543",
+                        "surface-tint": "#5dd5fa",
+                        "outline-variant": "#3d484d",
+                        "primary": "#5dd5fa",
+                        "tertiary": "#aec9e7",
+                        "on-secondary-fixed-variant": "#30495f",
+                        "surface-container-highest": "#283646",
+                        "secondary-fixed-dim": "#afc9e4",
+                        "surface-container-low": "#0f1c2c",
+                        "inverse-primary": "#00677f",
+                        "on-secondary-fixed": "#001e31",
+                        "tertiary-container": "#809bb7",
+                        "on-tertiary": "#16334a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "sm": "8px",
+                        "gutter": "20px",
+                        "md": "16px",
+                        "xs": "4px",
+                        "margin-desktop": "40px",
+                        "lg": "24px",
+                        "base": "4px",
+                        "xl": "32px",
+                        "2xl": "48px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Geist"],
+                        "headline-lg-mobile": ["Geist"],
+                        "label-md": ["JetBrains Mono"],
+                        "title-lg": ["Geist"],
+                        "body-lg": ["Geist"],
+                        "display": ["Geist"],
+                        "label-sm": ["JetBrains Mono"],
+                        "body-md": ["Geist"],
+                        "headline-md": ["Geist"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                        "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "500"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "display": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-sm": ["10px", {"lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="font-body-md text-on-surface bg-surface min-h-screen">
+<!-- SideNavBar (Shared Component) -->
+<aside class="hidden lg:flex flex-col fixed left-0 top-0 h-full p-md bg-surface-container-low border-r border-outline-variant w-64 z-50">
+<div class="flex items-center gap-md mb-xl">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container" data-icon="dashboard">dashboard</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md text-primary font-bold leading-tight">MacroMind</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Fintech Intelligence</p>
+</div>
+</div>
+<nav class="flex-1 space-y-xs">
+<a class="flex items-center gap-md p-md bg-secondary-container text-on-secondary-container rounded-lg font-bold scale-98 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg" href="#"><span class="material-symbols-outlined" data-icon="event">event</span><span class="font-label-md text-label-md">Events</span></a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg" href="#"><span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span><span class="font-label-md text-label-md">AI Picks</span></a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+<span class="font-label-md text-label-md">Watchlist</span>
+</a>
+</nav>
+<div class="mt-auto pt-xl space-y-xs">
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-variant transition-all rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+</div>
+</aside>
+<main class="lg:ml-64 flex flex-col min-h-screen">
+<!-- TopNavBar (Shared Component) -->
+<header class="sticky top-0 z-40 flex justify-between items-center w-full px-margin-mobile lg:px-margin-desktop bg-surface h-16 border-b border-outline-variant">
+<div class="flex items-center gap-xl">
+<div class="hidden lg:flex items-center gap-lg">
+<a class="font-label-md text-label-md text-primary border-b-2 border-primary pb-1" href="#">Dashboard</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Events</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">AI Picks</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Watchlist</a>
+</div>
+<!-- Mobile Logo -->
+<div class="lg:hidden flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary" data-icon="dashboard">dashboard</span>
+<span class="font-headline-md text-headline-md font-bold text-primary">MacroMind</span>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="hidden md:flex items-center bg-surface-container-high rounded-full px-md py-xs border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant text-sm mr-xs" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md w-48 text-on-surface placeholder:text-outline" placeholder="Search markets..." type="text"/>
+</div>
+<div class="flex items-center gap-md">
+<button class="p-xs text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-xs text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<img alt="User Avatar" class="w-8 h-8 rounded-full border border-primary-container" data-alt="A professional close-up portrait of a corporate executive with a neutral background, lit by high-end studio lighting for a clean, sophisticated fintech aesthetic. The subject is wearing a crisp dark suit, reflecting a modern corporate personality of precision and expertise. The overall image quality is sharp with a slight cool color grade to match a dark-themed UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMW9Kp9uGwYThdyWRP_BdcgFxbaUdxT4WF2l4N3rP_l25lSmCRlylWGREyAoOpaBeLuf7Y6nNnhlul0x1W_10Y9JyhSnKiUQr043s6xmyEb8jPvHnjHWHKwf5Tnc6C44VgtZAetFMq33dGW_YsEDO702KroUGB6UtEuqNnEQ5e3Yj6pWHAe_9HBuXVio-XQA6RDO5F91N1cT2Xhy9tCTZE8hWrMrZUPTzk2J-bsq7nFW3eV7q1q1km7LLCaqGGGxtygSyjLXe9-w8"/>
+</div>
+</div>
+</header>
+<!-- Live Ticker Bar -->
+<div class="w-full bg-surface-container-lowest border-b border-outline-variant h-10 flex items-center overflow-hidden">
+<div class="ticker-scroll">
+<!-- Repeated twice for seamless loop -->
+<div class="flex items-center gap-xl px-lg">
+<span class="flex items-center gap-xs font-label-md text-label-md"><span class="text-on-surface-variant">Nifty 50:</span> <span class="font-label-md text-label-md">22,450</span> <span class="text-green-400">+0.45%</span></span>
+<span class="flex items-center gap-xs font-label-md text-label-md"><span class="text-on-surface-variant">BTC/USD:</span> <span class="font-label-md text-label-md">$64,200</span> <span class="text-red-400">-1.2%</span></span>
+<span class="flex items-center gap-xs font-label-md text-label-md"><span class="text-on-surface-variant">Gold:</span> <span class="font-label-md text-label-md">$2,350</span> <span class="text-green-400">+0.1%</span></span>
+<span class="flex items-center gap-xs font-label-md text-label-md"><span class="text-on-surface-variant">Crude Oil:</span> <span class="font-label-md text-label-md">$82.5</span> <span class="text-green-400">+2.3%</span></span>
+<span class="flex items-center gap-xs font-label-md text-label-md"><span class="text-on-surface-variant">USD/INR:</span> <span class="font-label-md text-label-md">83.4</span> <span class="text-green-400">+0.05%</span></span>
+</div>
+<div class="flex items-center gap-xl px-lg">
+<span class="flex items-center gap-xs font-label-md text-label-md"><span class="text-on-surface-variant">Nifty 50:</span> <span class="font-label-md text-label-md">22,450</span> <span class="text-green-400">+0.45%</span></span>
+<span class="flex items-center gap-xs font-label-md text-label-md"><span class="text-on-surface-variant">BTC/USD:</span> <span class="font-label-md text-label-md">$64,200</span> <span class="text-red-400">-1.2%</span></span>
+<span class="flex items-center gap-xs font-label-md text-label-md"><span class="text-on-surface-variant">Gold:</span> <span class="font-label-md text-label-md">$2,350</span> <span class="text-green-400">+0.1%</span></span>
+<span class="flex items-center gap-xs font-label-md text-label-md"><span class="text-on-surface-variant">Crude Oil:</span> <span class="font-label-md text-label-md">$82.5</span> <span class="text-green-400">+2.3%</span></span>
+<span class="flex items-center gap-xs font-label-md text-label-md"><span class="text-on-surface-variant">USD/INR:</span> <span class="font-label-md text-label-md">83.4</span> <span class="text-green-400">+0.05%</span></span>
+</div>
+</div>
+</div>
+<!-- Dashboard Content -->
+<section class="p-margin-mobile lg:p-margin-desktop">
+<div class="flex flex-col lg:grid lg:grid-cols-12 gap-gutter">
+<!-- Left Column (Wide): Live Macro Events -->
+<div class="lg:col-span-8 space-y-gutter">
+<div class="glass-card rounded-xl overflow-hidden">
+<div class="p-lg border-b border-outline-variant flex justify-between items-center bg-surface-container-high/50">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary" data-icon="public">public</span>
+<h2 class="font-title-lg text-title-lg text-on-surface">Live Macro Events</h2>
+</div>
+<button class="text-primary font-label-md text-label-md hover:underline">View Calendar</button>
+</div>
+<div class="divide-y divide-outline-variant/30">
+<!-- Event 1 -->
+<div class="p-lg hover:bg-surface-variant/20 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-md border-l-4 border-red-500"><div class="flex gap-lg"><div class="space-y-xs"><div class="flex items-center gap-sm"><span class="font-body-lg text-body-lg font-semibold">US Fed Interest Rate Decision</span><span class="px-xs py-[2px] bg-red-900/20 text-red-400 border border-red-500/30 rounded text-label-sm font-label-sm uppercase">High Severity</span></div><p class="font-body-md text-body-md text-on-surface-variant">Expected tonight at 11:30 PM • <span class="text-label-sm">Just now</span></p></div></div><a class="flex items-center text-primary font-label-md text-label-md group" href="#">See impact <span class="material-symbols-outlined text-sm ml-xs group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span></a></div>
+<!-- Event 2 -->
+<div class="p-lg hover:bg-surface-variant/20 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-md border-l-4 border-amber-500"><div class="flex gap-lg"><div class="space-y-xs"><div class="flex items-center gap-sm"><span class="font-body-lg text-body-lg font-semibold">India Retail Inflation Drops to 4.8%</span><span class="px-xs py-[2px] bg-amber-900/20 text-amber-400 border border-amber-500/30 rounded text-label-sm font-label-sm uppercase">Medium Severity</span></div><p class="font-body-md text-body-md text-on-surface-variant">Released 2h ago • <span class="text-label-sm">10:15 AM</span></p></div></div><a class="flex items-center text-primary font-label-md text-label-md group" href="#">See impact <span class="material-symbols-outlined text-sm ml-xs group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span></a></div>
+<!-- Event 3 -->
+<div class="p-lg hover:bg-surface-variant/20 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-md border-l-4 border-red-500"><div class="flex gap-lg"><div class="space-y-xs"><div class="flex items-center gap-sm"><span class="font-body-lg text-body-lg font-semibold">Oil Prices Surge on Middle East Tensions</span><span class="px-xs py-[2px] bg-red-900/20 text-red-400 border border-red-500/30 rounded text-label-sm font-label-sm uppercase">High Severity</span></div><p class="font-body-md text-body-md text-on-surface-variant">Ongoing event • <span class="text-label-sm">Live</span></p></div></div><a class="flex items-center text-primary font-label-md text-label-md group" href="#">See impact <span class="material-symbols-outlined text-sm ml-xs group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span></a></div>
+</div>
+</div>
+<!-- Market Context Visualizer -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="glass-card rounded-xl p-lg relative overflow-hidden h-48">
+<div class="relative z-10">
+<h3 class="font-title-lg text-title-lg mb-sm">Market Volatility</h3>
+<div class="font-display text-display text-primary">VIX: 14.2</div>
+<p class="font-label-md text-label-md text-on-surface-variant mt-sm">Low-level concern; Neutral outlook</p>
+</div>
+</div>
+<div class="glass-card rounded-xl p-lg relative overflow-hidden h-48">
+<div class="relative z-10">
+<h3 class="font-title-lg text-title-lg mb-sm">AI Sentiment Score</h3>
+<div class="font-display text-display text-secondary">Bullish (72)</div>
+<p class="font-label-md text-label-md text-on-surface-variant mt-sm">Data points to recovery momentum</p>
+<div class="mt-md h-1.5 w-full bg-surface-variant rounded-full overflow-hidden relative"><div class="absolute top-0 left-0 h-full bg-primary rounded-full" style="width: 72%;"></div></div><div class="flex justify-between mt-xs text-[10px] text-on-surface-variant uppercase font-label-sm"><span>0</span><span>50</span><span>100</span></div></div>
+</div>
+</div>
+<div class="glass-card rounded-xl overflow-hidden"><div class="p-lg border-b border-outline-variant bg-surface-container-high/50 flex items-center gap-md"><span class="material-symbols-outlined text-primary" data-icon="auto_awesome">auto_awesome</span><h2 class="font-title-lg text-title-lg text-on-surface">Top AI Pick Right Now</h2></div><div class="p-lg"><div class="flex flex-wrap items-center justify-between gap-md mb-md"><div><div class="text-display text-primary font-bold">TCS</div><div class="text-label-md text-on-surface-variant">Weekly horizon</div></div><div class="text-right"><div class="text-headline-md font-bold">92<span class="text-body-md font-normal text-on-surface-variant">/100</span></div><div class="text-label-sm text-on-surface-variant uppercase">Confidence</div></div></div><div class="grid grid-cols-3 gap-md mb-lg"><div class="p-md bg-surface-container-low rounded-lg border border-outline-variant"><div class="text-label-sm text-on-surface-variant uppercase mb-xs">Entry</div><div class="font-bold">₹3,820</div></div><div class="p-md bg-surface-container-low rounded-lg border border-outline-variant"><div class="text-label-sm text-on-surface-variant uppercase mb-xs">Target</div><div class="font-bold text-green-400">₹4,050</div></div><div class="p-md bg-surface-container-low rounded-lg border border-outline-variant"><div class="text-label-sm text-on-surface-variant uppercase mb-xs">Stop-loss</div><div class="font-bold text-red-400">₹3,720</div></div></div><p class="font-body-md text-on-surface-variant italic border-t border-outline-variant/30 pt-md">'Strong demand for cloud transformation remains a key long-term catalyst.'</p></div></div></div>
+<!-- Right Column: Sector Momentum -->
+<div class="lg:col-span-4">
+<div class="glass-card rounded-xl overflow-hidden sticky top-24">
+<div class="p-lg border-b border-outline-variant bg-surface-container-high/50 flex items-center gap-md">
+<span class="material-symbols-outlined text-primary" data-icon="bar_chart">bar_chart</span>
+<h2 class="font-title-lg text-title-lg text-on-surface">Sector Momentum</h2>
+</div>
+<div class="p-lg space-y-xl">
+<!-- IT -->
+<div class="space-y-sm">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md">IT</span>
+<span class="font-label-md text-label-md text-green-400 font-bold">+1.2%</span>
+</div>
+<div class="h-2 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-1000" style="width: 60%;"></div>
+</div>
+</div>
+<!-- Banking -->
+<div class="space-y-sm">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md">Banking</span>
+<span class="font-label-md text-label-md text-red-400 font-bold">-0.8%</span>
+</div>
+<div class="h-2 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-error rounded-full transition-all duration-1000" style="width: 40%;"></div>
+</div>
+</div>
+<!-- Pharma -->
+<div class="space-y-sm">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md">Pharma</span>
+<span class="font-label-md text-label-md text-green-400 font-bold">+2.5%</span>
+</div>
+<div class="h-2 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-1000" style="width: 85%;"></div>
+</div>
+</div>
+<!-- Metals -->
+<div class="space-y-sm">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md">Metals</span>
+<span class="font-label-md text-label-md text-red-400 font-bold">-1.5%</span>
+</div>
+<div class="h-2 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-error rounded-full transition-all duration-1000" style="width: 30%;"></div>
+</div>
+</div>
+<!-- Aviation -->
+<div class="space-y-sm">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md">Aviation</span>
+<span class="font-label-md text-label-md text-green-400 font-bold">+0.4%</span>
+</div>
+<div class="h-2 w-full bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-1000" style="width: 52%;"></div>
+</div>
+</div>
+</div>
+<div class="p-lg bg-surface-container-high/30 border-t border-outline-variant mt-md">
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed italic">
+                                "Pharma showing highest relative strength today, potentially driven by export news. Keep an eye on Metals for recovery."
+                            </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Mobile Bottom Navigation -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface-container-high border-t border-outline-variant px-margin-mobile py-sm flex justify-between items-center z-50">
+<button class="flex flex-col items-center gap-xs text-primary">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</button>
+<button class="flex flex-col items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="show_chart">show_chart</span>
+<span class="font-label-sm text-label-sm">Markets</span>
+</button>
+<button class="flex flex-col items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="font-label-sm text-label-sm">AI Insights</span>
+</button>
+<button class="flex flex-col items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="visibility">visibility</span>
+<span class="font-label-sm text-label-sm">Watch</span>
+</button>
+<button class="flex flex-col items-center gap-xs text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</button>
+</nav>
+<script>
+        // Simple interactivity for hover effects
+        document.querySelectorAll('.glass-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.borderColor = '#5dd5fa';
+                card.style.transition = 'all 0.3s ease';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.borderColor = '#1E3A52';
+            });
+        });
+    </script>
+</body></html>

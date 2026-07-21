@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout 280 ./venv/Scripts/python.exe -X utf8 -c ' *)",
+      "Bash(awk '{print $2}')",
+      "Bash(git -C ../frontend log --oneline)",
+      "Bash(./venv/Scripts/python.exe -m py_compile main.py api/routes.py api/paper.py services/realtime/finnhub_ws.py services/agents/macro_research.py)",
+      "Bash(timeout 200 ./venv/Scripts/python.exe -X utf8 -c ' *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(npm run *)",
+      "Bash(timeout 90 ./venv/Scripts/python.exe -X utf8 -c ' *)",
+      "Bash(python -)",
+      "Bash(./venv/Scripts/python.exe -m pip install pytest)",
+      "Bash(./venv/Scripts/python.exe -m pytest -q)",
+      "Bash(./venv/Scripts/python.exe -X utf8 -c ' *)",
+      "Bash(grep -vE \"^\\\\s*$|Deprecation|from starlette\")",
+      "Bash(timeout 60 ./venv/Scripts/python.exe -X utf8 -c ' *)",
+      "Bash(timeout 120 ./venv/Scripts/python.exe -X utf8 -c ' *)",
+      "Bash(timeout 180 ./venv/Scripts/python.exe -X utf8 -c ' *)",
+      "Bash(grep -v '^$')",
+      "Bash(timeout 150 ./venv/Scripts/python.exe -X utf8 -c ' *)",
+      "Bash(./venv/Scripts/python.exe -m pip freeze)",
+      "Bash(./venv/Scripts/python.exe -)",
+      "Bash(timeout 120 backend/venv/Scripts/python.exe -X utf8 -c ' *)",
+      "Bash(git add *)"
+    ]
+  }
+}
