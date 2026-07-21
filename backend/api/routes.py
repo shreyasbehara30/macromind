@@ -457,6 +457,11 @@ async def add_to_watchlist(request: Request, item: dict):
         data = {"ticker": ticker, "market": market, "user_session_id": MOCK_USER_SESSION}
         supabase.table("watchlist").insert(data).execute()
     except Exception as e:
+        # Postgres 23505: the (user_session_id, ticker) unique constraint fired.
+        # Adding a symbol already on the watchlist is a no-op, not a failure, and
+        # certainly not a database outage.
+        if "23505" in str(e) or "duplicate key" in str(e).lower():
+            return {"status": "added"}
         logger.error(f"Watchlist insert failed: {e}")
         raise HTTPException(status_code=503, detail="Watchlist storage unavailable")
 

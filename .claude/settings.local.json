@@ -31,7 +31,8 @@
       "Bash(grep -vE \"Warning|starlette|Redis|^\\\\s*$\")",
       "Bash(git -C \"C:/Users/ECHO/OneDrive/Desktop/fintech\" add -A)",
       "Bash(git -C C:/Users/ECHO/OneDrive/Desktop/fintech -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m ' *)",
-      "Bash(git -C \"C:/Users/ECHO/OneDrive/Desktop/fintech\" log --oneline)"
+      "Bash(git -C \"C:/Users/ECHO/OneDrive/Desktop/fintech\" log --oneline)",
+      "Bash(./venv/Scripts/python.exe -m pytest -q -rs)"
     ]
   }
 }
