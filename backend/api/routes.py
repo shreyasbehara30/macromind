@@ -389,42 +389,72 @@ async def get_details(request: Request, symbol: str, market: str):
         raise HTTPException(status_code=502, detail=f"Details unavailable for {symbol}")
 
 MOCK_USER_SESSION = "mock_session_user_1"
-# Session-local fallback when Supabase is unreachable. Starts empty: it holds only
-# what the user actually added during this process's lifetime.
-IN_MEMORY_WATCHLIST = []
+
+
+def _watchlist_db():
+    """Supabase client for watchlist operations, or 503.
+
+    No in-memory fallback. A watchlist that silently lives in one process is
+    indistinguishable from a persisted one until the process restarts.
+    """
+    try:
+        return get_supabase()
+    except Exception as e:
+        logger.error(f"Supabase unavailable for watchlist: {e}")
+        raise HTTPException(status_code=503, detail="Database unavailable")
+
 
 @router.get("/watchlist")
 async def get_watchlist(request: Request):
+    supabase = _watchlist_db()
     try:
-        supabase = get_supabase()
-        response = supabase.table("watchlist").select("*").eq("user_session_id", MOCK_USER_SESSION).execute()
-        return {"watchlist": response.data}
+        response = (
+            supabase.table("watchlist")
+            .select("*")
+            .eq("user_session_id", MOCK_USER_SESSION)
+            .execute()
+        )
     except Exception as e:
-        return {"watchlist": IN_MEMORY_WATCHLIST}
+        logger.error(f"Watchlist read failed: {e}")
+        raise HTTPException(status_code=503, detail="Watchlist storage unavailable")
+
+    return {"watchlist": response.data}
+
 
 @router.post("/watchlist")
 async def add_to_watchlist(request: Request, item: dict):
+    ticker = item.get("ticker")
+    market = item.get("market")
+    if not ticker or not market:
+        raise HTTPException(status_code=400, detail="ticker and market are both required")
+
+    supabase = _watchlist_db()
     try:
-        supabase = get_supabase()
-        data = {"ticker": item["ticker"], "market": item.get("market", "UNKNOWN"), "user_session_id": MOCK_USER_SESSION}
+        data = {"ticker": ticker, "market": market, "user_session_id": MOCK_USER_SESSION}
         supabase.table("watchlist").insert(data).execute()
-        return {"status": "added"}
-    except Exception:
-        # Check if exists
-        if not any(w["ticker"] == item["ticker"] for w in IN_MEMORY_WATCHLIST):
-            IN_MEMORY_WATCHLIST.append({"ticker": item["ticker"], "market": item.get("market", "UNKNOWN")})
-        return {"status": "added_mock"}
+    except Exception as e:
+        logger.error(f"Watchlist insert failed: {e}")
+        raise HTTPException(status_code=503, detail="Watchlist storage unavailable")
+
+    return {"status": "added"}
+
 
 @router.delete("/watchlist/{ticker}")
 async def remove_from_watchlist(request: Request, ticker: str):
+    supabase = _watchlist_db()
     try:
-        supabase = get_supabase()
-        supabase.table("watchlist").delete().eq("user_session_id", MOCK_USER_SESSION).eq("ticker", ticker).execute()
-        return {"status": "removed"}
-    except Exception:
-        global IN_MEMORY_WATCHLIST
-        IN_MEMORY_WATCHLIST = [w for w in IN_MEMORY_WATCHLIST if w["ticker"] != ticker]
-        return {"status": "removed_mock"}
+        (
+            supabase.table("watchlist")
+            .delete()
+            .eq("user_session_id", MOCK_USER_SESSION)
+            .eq("ticker", ticker)
+            .execute()
+        )
+    except Exception as e:
+        logger.error(f"Watchlist delete failed: {e}")
+        raise HTTPException(status_code=503, detail="Watchlist storage unavailable")
+
+    return {"status": "removed"}
 
 @router.get("/alerts")
 async def get_alerts(request: Request):
