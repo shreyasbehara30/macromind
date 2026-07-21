@@ -6,15 +6,24 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import { fetchWatchlist, removeFromWatchlist as apiRemoveFromWatchlist } from "@/lib/api";
+import { useQuotes, quoteKey } from "@/lib/useQuotes";
 
 export default function WatchlistPage() {
   const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
 
-  const { data: watchlistData, refetch } = useQuery({
+  const { data: watchlistData, refetch, isError, error } = useQuery({
     queryKey: ['watchlist'],
     queryFn: fetchWatchlist,
     refetchInterval: 10000,
   });
+
+  const rows = watchlistData?.watchlist ?? [];
+
+  // The watchlist API returns symbols only. Prices are hydrated client-side,
+  // one parallel request per row against the same quote endpoint the rest of
+  // the app uses. A row whose quote fails shows a neutral dash: no price, no
+  // direction, and no red down-signal implying a fall that was never measured.
+  const { quotes } = useQuotes(rows.map((r) => ({ ticker: r.ticker, market: r.market })));
 
   const removeFromWatchlist = async (ticker: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -33,7 +42,7 @@ export default function WatchlistPage() {
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-text-primary">Watchlist</h1>
-          <p className="text-sm text-text-secondary mt-1">Saved symbols. Open one for its chart and quote.</p>
+          <p className="text-sm text-text-secondary mt-1">Saved symbols with live quotes.</p>
         </div>
       </div>
 
@@ -43,12 +52,24 @@ export default function WatchlistPage() {
             <tr>
               <th className="px-4 py-3 font-medium border-b border-border-dark">Symbol</th>
               <th className="px-4 py-3 font-medium border-b border-border-dark">Market</th>
+              <th className="px-4 py-3 font-medium border-b border-border-dark text-right">Price</th>
+              <th className="px-4 py-3 font-medium border-b border-border-dark text-right">Change</th>
+              <th className="px-4 py-3 font-medium border-b border-border-dark text-right">Change %</th>
               <th className="px-4 py-3 font-medium border-b border-border-dark"></th>
             </tr>
           </thead>
           <tbody>
-            {watchlistData?.watchlist.map((item) => {
+            {rows.map((item) => {
               const isExpanded = expandedSymbol === item.ticker;
+              const quote = quotes.get(quoteKey(item.market, item.ticker));
+              // Direction is only known when a change value exists. Absent data
+              // is never coloured, so a missing quote cannot read as a decline.
+              const dir =
+                quote && typeof quote.change === "number"
+                  ? quote.change >= 0
+                    ? "positive"
+                    : "negative"
+                  : "";
 
               return (
                 <Fragment key={item.ticker}>
@@ -64,8 +85,21 @@ export default function WatchlistPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 text-text-secondary">{item.market}</td>
+                    <td className="px-4 py-3 text-right mono">
+                      {quote ? `${quote.currency_symbol}${quote.price.toFixed(2)}` : <span className="text-text-secondary">—</span>}
+                    </td>
+                    <td className={`px-4 py-3 text-right mono ${dir}`}>
+                      {quote && typeof quote.change === "number"
+                        ? `${quote.change >= 0 ? "+" : ""}${quote.change.toFixed(2)}`
+                        : <span className="text-text-secondary">—</span>}
+                    </td>
+                    <td className={`px-4 py-3 text-right mono ${dir}`}>
+                      {quote && typeof quote.change_percent === "number"
+                        ? `${quote.change_percent >= 0 ? "+" : ""}${quote.change_percent.toFixed(2)}%`
+                        : <span className="text-text-secondary">—</span>}
+                    </td>
                     <td className="px-4 py-3 text-right">
-                      <button 
+                      <button
                         onClick={(e) => removeFromWatchlist(item.ticker, e)}
                         className="opacity-0 group-hover:opacity-100 transition-opacity text-text-secondary hover:text-tv-red material-symbols-outlined text-[20px]"
                         title="Remove"
@@ -83,7 +117,7 @@ export default function WatchlistPage() {
                         animate={{ opacity: 1, height: "auto" }}
                         exit={{ opacity: 0, height: 0 }}
                       >
-                        <td colSpan={3} className="px-4 py-3 bg-bg-secondary border-b border-border-dark overflow-hidden">
+                        <td colSpan={6} className="px-4 py-3 bg-bg-secondary border-b border-border-dark overflow-hidden">
                           <div className="flex justify-end items-center bg-bg-primary rounded border border-border-dark p-3">
                             <div className="flex gap-2">
                               <Link 
@@ -108,9 +142,17 @@ export default function WatchlistPage() {
               )
             })}
             
-            {!watchlistData?.watchlist.length && (
+            {isError && (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-text-secondary">
+                <td colSpan={6} className="px-4 py-8 text-center text-tv-red">
+                  Watchlist unavailable: {error instanceof Error ? error.message : "storage error"}
+                </td>
+              </tr>
+            )}
+
+            {!isError && rows.length === 0 && (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-text-secondary">
                   Your watchlist is empty. Use the search bar (Ctrl+K) to add symbols.
                 </td>
               </tr>
