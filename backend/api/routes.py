@@ -188,7 +188,34 @@ async def get_picks(request: Request, body: PickRequest):
 
         picks = []
         for ticker, market in candidates:
-            prompt = f"Analyze ticker {ticker} and provide a trade setup. DO NOT call any tools to output the final result. Just return a raw JSON object with keys: verdict, entry_zone, target, stop_loss, confidence_score, reasoning."
+            # Ground the model in the live price before asking for levels. Without
+            # this the model priced AAPL at 140-150 while it traded at 328.
+            quote = await market_data_service.get_quote(ticker, market)
+            if quote.error or quote.price <= 0:
+                logger.error(f"Skipping {ticker}: no live quote to ground the prompt ({quote.error})")
+                continue
+
+            price = quote.price
+            currency = quote.currency_symbol
+
+            prompt = (
+                f"Analyze {ticker} and provide a trade setup.\n\n"
+                f"CURRENT LIVE PRICE: {currency}{price:.2f} ({quote.currency}). "
+                f"This is the real, current market price as of now. Every level you "
+                f"produce MUST be anchored to it.\n\n"
+                f"Rules for the levels:\n"
+                f"- entry_zone must be within 5% of {price:.2f}, i.e. between "
+                f"{price * 0.95:.2f} and {price * 1.05:.2f}. Express it as a narrow "
+                f"range like \"{price * 0.99:.2f}-{price * 1.01:.2f}\".\n"
+                f"- For a LONG: stop_loss below the entry zone, target above it.\n"
+                f"- For a SHORT: stop_loss above the entry zone, target below it.\n"
+                f"- Keep target and stop_loss within 25% of {price:.2f}.\n"
+                f"- Do not use prices from your training data. {ticker} trades at "
+                f"{currency}{price:.2f} right now.\n\n"
+                f"DO NOT call any tools to output the final result. Return a raw JSON "
+                f"object with keys: verdict, entry_zone, target, stop_loss, "
+                f"confidence_score, reasoning."
+            )
             try:
                 response_str = await stock_analysis_agent.run(prompt)
                 json_match = re.search(r'\{.*\}', response_str, re.DOTALL)
@@ -221,14 +248,11 @@ async def get_picks(request: Request, body: PickRequest):
 
                 entry_low, entry_high = entry_range
 
-                # Validate against the live quote. Same code path as everything else.
-                quote = await market_data_service.get_quote(ticker, market)
-                if quote.error or quote.price <= 0:
-                    logger.error(f"Discarding pick for {ticker}: no live quote to validate against ({quote.error})")
-                    continue
-
+                # Validate against the same live quote the prompt was grounded in.
+                # Unchanged 20% band: grounding the prompt does not excuse the model
+                # from producing levels that survive the check.
                 rejection = validate_against_quote(
-                    ticker, entry_low, entry_high, target, stop_loss, side, quote.price
+                    ticker, entry_low, entry_high, target, stop_loss, side, price
                 )
                 if rejection:
                     logger.error(f"Rejecting model pick for {ticker}: {rejection}")

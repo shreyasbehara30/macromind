@@ -26,7 +26,12 @@
       "Bash(git add *)",
       "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m ' *)",
       "Bash(./venv/Scripts/python.exe -m pytest tests/test_api_contract.py -v -rs)",
-      "Bash(rm -f _restart_proof.py)"
+      "Bash(rm -f _restart_proof.py)",
+      "Bash(timeout 400 ./venv/Scripts/python.exe -X utf8 -c ' *)",
+      "Bash(grep -vE \"Warning|starlette|Redis|^\\\\s*$\")",
+      "Bash(git -C \"C:/Users/ECHO/OneDrive/Desktop/fintech\" add -A)",
+      "Bash(git -C C:/Users/ECHO/OneDrive/Desktop/fintech -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m ' *)",
+      "Bash(git -C \"C:/Users/ECHO/OneDrive/Desktop/fintech\" log --oneline)"
     ]
   }
 }
