@@ -1,26 +1,73 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --color-bg-primary: #131722;
+  --color-bg-secondary: #1E222D;
+  --color-bg-tertiary: #2A2E39;
+  --color-bg-chart: #131722;
+  --color-border-dark: #2A2E39;
+  --color-border-light: #363A45;
+  --color-text-primary: #D1D4DC;
+  --color-text-secondary: #787B86;
+  --color-text-white: #FFFFFF;
+  --color-teal: #0EA5C9;
+  --color-tv-green: #26A69A;
+  --color-tv-red: #EF5350;
+  --color-purple: #7C3AED;
+  --color-amber: #F59E0B;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  word-break: normal;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+* {
+  min-width: 0;
+  border-color: var(--color-border-dark);
+}
+
+/* All prices and numbers use monospace */
+.price, .mono { 
+  font-family: 'Roboto Mono', 'Courier New', monospace; 
+}
+
+/* Positive change */
+.positive { color: var(--color-tv-green); }
+
+/* Negative change */
+.negative { color: var(--color-tv-red); }
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-light);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
+}
+
+.ticker-scroll {
+  display: flex;
+  width: fit-content;
+  animation: ticker 40s linear infinite;
+}
+
+.ticker-scroll:hover {
+  animation-play-state: paused;
+}
+
+@keyframes ticker {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
