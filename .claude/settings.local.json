@@ -32,7 +32,24 @@
       "Bash(git -C \"C:/Users/ECHO/OneDrive/Desktop/fintech\" add -A)",
       "Bash(git -C C:/Users/ECHO/OneDrive/Desktop/fintech -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m ' *)",
       "Bash(git -C \"C:/Users/ECHO/OneDrive/Desktop/fintech\" log --oneline)",
-      "Bash(./venv/Scripts/python.exe -m pytest -q -rs)"
+      "Bash(./venv/Scripts/python.exe -m pytest -q -rs)",
+      "Bash(./venv/Scripts/python.exe -m uvicorn main:app --port 8000 --log-level info)",
+      "Bash(echo \"launched pid $!\")",
+      "Bash(timeout 40 ./venv/Scripts/python.exe -X utf8 -c ' *)",
+      "Bash(curl -s '__TRACKED_VAR__/api/history?symbol=AAPL&market=US&timeframe=1D' -o /tmp/h.json)",
+      "Read(//tmp/**)",
+      "Bash(./venv/Scripts/python.exe)",
+      "Bash(curl -s __TRACKED_VAR__/api/events -o /tmp/e.json -w '[%{http_code}]\\\\n')",
+      "Bash(curl -s __TRACKED_VAR__/api/events/123/impact -o /tmp/ei.json -w '[%{http_code}] ')",
+      "Bash(./venv/Scripts/python.exe -c \"import json;d=json.load\\(open\\(r'/tmp/ei.json'\\)\\);print\\('title=',repr\\(d.get\\('title'\\)\\)[:60],'| severity=',d.get\\('severity'\\),'| analysis?',bool\\(d.get\\('ai_analysis'\\)\\),'| chain=',len\\(d.get\\('chain_reaction',[]\\)\\),'| benef=',len\\(d.get\\('stocks',{}\\).get\\('beneficiaries',[]\\)\\)\\)\")",
+      "Bash(curl -s __TRACKED_VAR__/api/alerts -w ' [%{http_code}]\\\\n')",
+      "Bash(curl -s __TRACKED_VAR__/api/dashboard -o /tmp/d.json)",
+      "Bash(./venv/Scripts/python.exe -c ' *)",
+      "Bash(curl -s -o /dev/null http://127.0.0.1:8000/api/health)",
+      "Bash(kill %1)",
+      "Bash(pkill -f \"uvicorn main:app --port 8000\")",
+      "Bash(rm -f _demo_server.log)",
+      "Bash(git -C frontend diff --stat)"
     ]
   }
 }
