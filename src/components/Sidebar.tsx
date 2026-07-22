@@ -31,14 +31,6 @@ export default function Sidebar() {
       items: [
         { name: "Watchlist", href: "/watchlist", icon: "monitoring" },
         { name: "Paper Portfolio", href: "/paper", icon: "account_balance_wallet" },
-        { name: "Trade History", href: "/paper/history", icon: "history" },
-      ]
-    },
-    {
-      title: "TOOLS",
-      items: [
-        { name: "Macro Scanner", href: "/scanner", icon: "radar" },
-        { name: "Health Status", href: "/health", icon: "health_and_safety" },
       ]
     }
   ];
