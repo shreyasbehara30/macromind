@@ -9,7 +9,7 @@ import { supabase } from "@/lib/supabase";
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
@@ -133,7 +133,7 @@ export default function Sidebar() {
           </div>
         </div>
         <button 
-          onClick={() => supabase.auth.signOut()}
+          onClick={() => logout()}
           className="material-symbols-outlined text-text-secondary hover:text-tv-red transition-colors text-[20px]"
           title="Sign Out"
         >
