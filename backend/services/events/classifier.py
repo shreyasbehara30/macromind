@@ -16,12 +16,29 @@ class ClassifiedEvent(BaseModel):
 class EventClassifier:
     async def classify_headline(self, headline: str) -> Optional[ClassifiedEvent]:
         system_prompt = """
-        You are a financial analyst. Classify the following macroeconomic news headline into a structured JSON format.
+        You are a financial analyst. Classify the following macroeconomic news headline.
         Evaluate the severity of the event on Indian and Global markets.
+        Return ONLY a raw JSON object, exactly this shape and nothing else:
+        {
+          "event_type": "e.g. Interest Rate Decision",
+          "severity": "High",
+          "affected_asset_classes": ["Equities"],
+          "affected_sectors": ["Banking"],
+          "summary": "one-sentence summary"
+        }
+        severity is exactly one of High, Medium, Low.
         """
-        
+
+        fallback = ClassifiedEvent(
+            event_type="Unclassified",
+            severity="Low",
+            affected_asset_classes=[],
+            affected_sectors=[],
+            summary=headline
+        )
+
         try:
-            # We enforce JSON schema directly if the provider supports it, 
+            # We enforce JSON schema directly if the provider supports it,
             # but we can also just ask for JSON and parse it
             response = await llm_provider.generate(
                 system_prompt=system_prompt,
@@ -29,20 +46,23 @@ class EventClassifier:
                 # passing response_schema might require Pydantic model for Gemini
                 response_schema=ClassifiedEvent
             )
-            
+
             # response.content should be a JSON string
             data = json.loads(response.content)
-            return ClassifiedEvent(**data)
-            
+            # Partial-fill: keep any valid field the model returned instead of
+            # discarding the whole classification over one missing key.
+            merged = fallback.model_dump()
+            if isinstance(data, dict):
+                for key in merged:
+                    if data.get(key) not in (None, ""):
+                        merged[key] = data[key]
+            try:
+                return ClassifiedEvent(**merged)
+            except Exception:
+                return ClassifiedEvent(**data)
+
         except Exception as e:
             logger.error(f"Failed to classify headline '{headline}': {e}")
-            # Fallback
-            return ClassifiedEvent(
-                event_type="Unclassified",
-                severity="Low",
-                affected_asset_classes=[],
-                affected_sectors=[],
-                summary=headline
-            )
+            return fallback
 
 event_classifier = EventClassifier()

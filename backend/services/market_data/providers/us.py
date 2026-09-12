@@ -1,3 +1,4 @@
+import asyncio
 import yfinance as yf
 import httpx
 import logging
@@ -7,6 +8,12 @@ from services.market_data.providers.base import MarketDataProvider
 from services.market_data.schema import QuoteResponse
 
 logger = logging.getLogger(__name__)
+
+def _fetch_fast_info(symbol: str):
+    # Blocking network call: always run in a thread, never on the event loop.
+    ticker = yf.Ticker(symbol)
+    info = ticker.fast_info
+    return info.last_price, info.previous_close
 
 class USMarketProvider(MarketDataProvider):
     """
@@ -58,12 +65,7 @@ class USMarketProvider(MarketDataProvider):
 
         # 3. Fallback to yfinance
         try:
-            # yfinance operations are blocking, wrap in async if heavy, but for a single ticker it's usually fast enough for a fallback
-            ticker = yf.Ticker(symbol)
-            fast_info = ticker.fast_info
-            
-            price = fast_info.last_price
-            prev_close = fast_info.previous_close
+            price, prev_close = await asyncio.to_thread(_fetch_fast_info, symbol)
             change = price - prev_close
             change_percent = (change / prev_close) * 100 if prev_close else 0.0
 

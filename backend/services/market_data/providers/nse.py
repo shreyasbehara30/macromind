@@ -1,3 +1,4 @@
+import asyncio
 import yfinance as yf
 import logging
 from datetime import datetime, timezone
@@ -7,23 +8,24 @@ from services.market_data.symbols import resolve_yf_symbol
 
 logger = logging.getLogger(__name__)
 
+def _fetch_fast_info(yf_symbol: str):
+    # Blocking network call: always run in a thread, never on the event loop.
+    ticker = yf.Ticker(yf_symbol)
+    info = ticker.fast_info
+    return info.last_price, info.previous_close
+
 class NSEMarketProvider(MarketDataProvider):
     """
     Fetches NSE/BSE equity prices using yfinance.
-    (NSE direct API could be added here, with session cookie rotation, 
+    (NSE direct API could be added here, with session cookie rotation,
     but yfinance is extremely resilient for free tier).
     """
     async def get_quote(self, symbol: str, market: str = "NSE") -> QuoteResponse:
         try:
-            # yfinance operations are blocking, but usually fast enough.
             # The caller states the market; it is not derived from the suffix.
             yf_symbol = resolve_yf_symbol(symbol, market)
 
-            ticker = yf.Ticker(yf_symbol)
-            fast_info = ticker.fast_info
-
-            price = fast_info.last_price
-            prev_close = fast_info.previous_close
+            price, prev_close = await asyncio.to_thread(_fetch_fast_info, yf_symbol)
             change = price - prev_close
             change_percent = (change / prev_close) * 100 if prev_close else 0.0
 

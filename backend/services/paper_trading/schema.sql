@@ -22,6 +22,7 @@ CREATE TABLE public.paper_trades (
     status VARCHAR(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed_target', 'closed_stoploss', 'closed_manual')),
     opened_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     closed_at TIMESTAMP WITH TIME ZONE,
+    exit_price NUMERIC(15, 4),
     realized_pnl NUMERIC(15, 4) DEFAULT 0.00,
     source VARCHAR(255) DEFAULT 'manual' -- can store AI Pick ID or string
 );

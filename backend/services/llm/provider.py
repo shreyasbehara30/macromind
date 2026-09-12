@@ -125,7 +125,7 @@ class LLMProvider:
                 })
 
         kwargs = {
-            "model": "llama-3.3-70b-versatile",
+            "model": settings.GROQ_MODEL,
             "messages": oai_messages,
             "temperature": 0.2
         }

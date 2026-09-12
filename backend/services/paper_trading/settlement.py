@@ -1,14 +1,14 @@
 import logging
 from datetime import datetime
 from services.market_data.service import market_data_service
-from services.paper_trading.db import get_supabase
+from services.paper_trading.local_store import get_store
 
 logger = logging.getLogger(__name__)
 
 async def settle_paper_trades():
     """APScheduler background job to check and close open paper trades."""
     try:
-        supabase = get_supabase()
+        supabase = get_store()
     except Exception as e:
         logger.warning(f"Skipping paper settlement (DB not configured): {e}")
         return

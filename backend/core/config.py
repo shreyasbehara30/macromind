@@ -18,6 +18,9 @@ class Settings(BaseSettings):
 
     # LLM Settings
     GROQ_API_KEY: str = ""
+    # Groq retires model IDs without notice (llama-3.3-70b-versatile died
+    # this way). The ID lives here, not hardcoded at call sites.
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
     GEMINI_API_KEY: str = ""
     LLM_PROVIDER_PRIMARY: str = "groq"
     LLM_PROVIDER_FALLBACK: str = "groq"

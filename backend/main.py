@@ -68,4 +68,8 @@ async def health_check(request: Request):
 
 from api.routes import router as api_router
 app.include_router(api_router, prefix="/api")
+from api.backtest import router as backtest_router
+# Paths land at /api/backtest, /api/backtest/montecarlo, ... (no double prefix:
+# the router already carries "/backtest").
+app.include_router(backtest_router, prefix="/api")
 

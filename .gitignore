@@ -9,8 +9,13 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
-# The frontend is its own git repository with its own history.
-frontend/
 
 # Build artifacts
 *.vsix
+
+# Logs (local runtime output, never commit)
+*.log
+
+# Local on-disk store (real user data, machine-specific)
+backend/data/
+*.db

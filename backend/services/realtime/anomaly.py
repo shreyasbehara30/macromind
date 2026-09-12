@@ -16,6 +16,8 @@ class AnomalyWatcher:
         
         # Simple global list to hold active flags for the dashboard
         self.active_flags = []
+        # Recent alert-agent decisions surfaced via GET /api/alerts.
+        self.recent_decisions = []
 
     async def check_tick(self, symbol: str, price: float, timestamp: float = None):
         """Pure python logic: Zero LLM involvement. Fast latency check."""
@@ -61,6 +63,18 @@ class AnomalyWatcher:
             # Assuming runner.run() is async
             decision = await alert_monitoring_agent.run(task)
             logger.info(f"Alert Agent Decision for {symbol}: {decision}")
+            import time as _time
+
+            self.recent_decisions.append(
+                {
+                    "symbol": symbol,
+                    "move_percent": round(move_percent, 2),
+                    "price": current_price,
+                    "decision": decision,
+                    "at": _time.time(),
+                }
+            )
+            self.recent_decisions = self.recent_decisions[-50:]
         except Exception as e:
             logger.error(f"Failed to run Alert Monitoring Agent out-of-cycle: {e}")
 

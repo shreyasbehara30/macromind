@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter, Request, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
@@ -6,7 +7,6 @@ from services.market_data.service import market_data_service
 from services.market_data.symbols import MARKETS, lookup_market, resolve_yf_symbol, UnknownMarketError
 from services.agents.stock_analysis import stock_analysis_agent
 from services.agents.portfolio_impact import portfolio_impact_agent
-from services.paper_trading.db import get_supabase
 import logging
 
 logger = logging.getLogger(__name__)
@@ -38,14 +38,19 @@ async def get_dashboard(request: Request):
     
     valid_quotes = [q.model_dump() for q in quotes if not isinstance(q, Exception)]
 
-    try:
+    def _sector_changes():
+        # Blocking Yahoo calls: run off the event loop.
         xlk = yf.Ticker("XLK").history(period="5d")
         xlf = yf.Ticker("XLF").history(period="5d")
         it_change = ((xlk['Close'].iloc[-1] - xlk['Close'].iloc[0]) / xlk['Close'].iloc[0]) * 100
         bank_change = ((xlf['Close'].iloc[-1] - xlf['Close'].iloc[0]) / xlf['Close'].iloc[0]) * 100
+        return [it_change, bank_change]
+
+    try:
+        it_change, bank_change = await asyncio.to_thread(_sector_changes)
         sector_momentum = [
-            {"sector": "IT", "change": round(it_change, 2)},
-            {"sector": "Banking", "change": round(bank_change, 2)}
+            {"sector": "IT", "change": round(float(it_change), 2)},
+            {"sector": "Banking", "change": round(float(bank_change), 2)}
         ]
     except Exception as e:
         logger.error(f"Sector momentum fetch failed: {e}")
@@ -75,33 +80,63 @@ async def get_dashboard(request: Request):
         "top_events": top_events
     }
 
+@router.get("/global")
+async def get_global(request: Request):
+    """Global markets board: one live quote per region/asset.
+
+    Every symbol here was verified against the quote path; tickers that
+    cannot produce a quote (crude, FX pairs) are excluded rather than
+    rendered as zeros.
+    """
+    import asyncio
+
+    symbols = [
+        ("^NSEI", "NSE"),
+        ("^GSPC", "US"),
+        ("^IXIC", "US"),
+        ("^FTSE", "US"),
+        ("^N225", "US"),
+        ("BTC", "CRYPTO"),
+        ("ETH", "CRYPTO"),
+        ("Gold", "COMMODITY"),
+    ]
+    quotes = await asyncio.gather(
+        *(market_data_service.get_quote(sym, mkt) for sym, mkt in symbols),
+        return_exceptions=True,
+    )
+    return {
+        "markets": [
+            q.model_dump() for q in quotes if not isinstance(q, Exception) and not q.error
+        ]
+    }
+
+
 @router.get("/events")
 async def get_events(request: Request, page: int = 1, limit: int = 10):
     """
     Returns paginated, filterable macro event feed.
+
+    Severity comes from the LLM classifier (services/events/classifier.py),
+    not a keyword hack. Classification runs concurrently over the page;
+    each headline falls back to Low inside the classifier on failure,
+    so the feed degrades to labelled data rather than severity: None.
     """
-    import httpx
-    from core.config import settings
+    from services.events.pipeline import (
+        classify_headlines,
+        fetch_finnhub_news,
+        to_event_dict,
+    )
     try:
-        async with httpx.AsyncClient() as client:
-            res = await client.get(
-                "https://finnhub.io/api/v1/news",
-                params={"category": "general", "token": settings.FINNHUB_API_KEY}
-            )
-            if res.status_code == 200:
-                news = res.json()
-                events = []
-                for n in news[:limit]:
-                    published = n.get('datetime')
-                    events.append({
-                        "id": str(n.get('id')),
-                        "severity": None,
-                        "headline": n.get('headline'),
-                        "source": n.get('source'),
-                        "timestamp": datetime.fromtimestamp(published, tz=timezone.utc).isoformat() if published else None,
-                        "sectors": []
-                    })
-                return {"events": events, "page": page, "total": len(news)}
+        news = await fetch_finnhub_news()
+        if news:
+            page_items = news[:limit]
+            headlines = [n.get("headline", "") for n in page_items]
+            classified = await classify_headlines(headlines)
+            events = [
+                to_event_dict(n, c, i)
+                for i, (n, c) in enumerate(zip(page_items, classified))
+            ]
+            return {"events": events, "page": page, "total": len(news)}
     except Exception as e:
         logger.error(f"Events fetch failed: {e}")
     return {"events": [], "page": page, "total": 0}
@@ -110,28 +145,31 @@ async def get_events(request: Request, page: int = 1, limit: int = 10):
 async def get_event_impact(request: Request, id: str):
     """
     Returns full chain reaction + beneficiary/risk stocks.
+
+    Primary path is the Review III pipeline
+    (classifier -> context_assembler -> impact engine, adapted to the
+    frontend shape). The legacy macro_research_agent prompt is the
+    fallback so a pipeline failure still returns the DEMO READY shape.
     """
-    import httpx
     import json
     import re
-    from core.config import settings
     from services.agents.macro_research import macro_research_agent
-    
+    from services.events.pipeline import analyze_event, fetch_finnhub_news
+
     headline = f"Market event {id}"
     try:
-        async with httpx.AsyncClient() as client:
-            res = await client.get(
-                "https://finnhub.io/api/v1/news",
-                params={"category": "general", "token": settings.FINNHUB_API_KEY}
-            )
-            if res.status_code == 200:
-                news = res.json()
-                for n in news:
-                    if str(n.get('id')) == id:
-                        headline = n.get('headline')
-                        break
+        news = await fetch_finnhub_news()
+        for n in news:
+            if str(n.get('id')) == id:
+                headline = n.get('headline')
+                break
     except:
         pass
+
+    try:
+        return await analyze_event(headline)
+    except Exception as e:
+        logger.error(f"Pipeline impact failed, falling back to agent prompt: {e}")
         
     try:
         prompt = f"""
@@ -186,18 +224,22 @@ async def get_picks(request: Request, body: PickRequest):
         else:
             candidates = [("RELIANCE.NS", "NSE"), ("HDFCBANK.NS", "NSE")]
 
-        picks = []
-        for ticker, market in candidates:
-            # Ground the model in the live price before asking for levels. Without
-            # this the model priced AAPL at 140-150 while it traded at 328.
-            quote = await market_data_service.get_quote(ticker, market)
-            if quote.error or quote.price <= 0:
-                logger.error(f"Skipping {ticker}: no live quote to ground the prompt ({quote.error})")
+        # Grounding quotes first, concurrently: every candidate needs a live
+        # price before the model is asked for levels (without this the model
+        # priced AAPL at 140-150 while it traded at 328).
+        live_quotes = await asyncio.gather(
+            *(market_data_service.get_quote(ticker, market) for ticker, market in candidates)
+        )
+        grounded = []
+        for (ticker, market), quote in zip(candidates, live_quotes):
+            if isinstance(quote, Exception) or quote.error or quote.price <= 0:
+                logger.error(f"Skipping {ticker}: no live quote to ground the prompt")
                 continue
+            grounded.append((ticker, market, quote))
 
+        async def _analyse(ticker: str, market: str, quote) -> str:
             price = quote.price
             currency = quote.currency_symbol
-
             prompt = (
                 f"Analyze {ticker} and provide a trade setup.\n\n"
                 f"CURRENT LIVE PRICE: {currency}{price:.2f} ({quote.currency}). "
@@ -216,8 +258,23 @@ async def get_picks(request: Request, body: PickRequest):
                 f"object with keys: verdict, entry_zone, target, stop_loss, "
                 f"confidence_score, reasoning."
             )
+            return await stock_analysis_agent.run(prompt)
+
+        # Model calls run concurrently: sequential calls made the page take
+        # 2x per candidate for no correctness benefit.
+        responses = await asyncio.gather(
+            *(_analyse(ticker, market, quote) for ticker, market, quote in grounded),
+            return_exceptions=True,
+        )
+
+        picks = []
+        for (ticker, market, quote), response_str in zip(grounded, responses):
+            if isinstance(response_str, Exception):
+                logger.error(f"Failed to analyze {ticker}: {response_str}")
+                continue
+            price = quote.price
+
             try:
-                response_str = await stock_analysis_agent.run(prompt)
                 json_match = re.search(r'\{.*\}', response_str, re.DOTALL)
                 if json_match:
                     data = json.loads(json_match.group(0))
@@ -416,26 +473,26 @@ MOCK_USER_SESSION = "mock_session_user_1"
 
 
 def _watchlist_db():
-    """Supabase client for watchlist operations, or 503.
+    """Supabase when reachable, else the local on-disk store.
 
-    No in-memory fallback. A watchlist that silently lives in one process is
-    indistinguishable from a persisted one until the process restarts.
+    No in-memory fallback: both options are real persistence. A watchlist
+    that silently lives in one process is indistinguishable from a
+    persisted one until the process restarts.
     """
-    try:
-        return get_supabase()
-    except Exception as e:
-        logger.error(f"Supabase unavailable for watchlist: {e}")
-        raise HTTPException(status_code=503, detail="Database unavailable")
+    from services.paper_trading.local_store import get_store
+
+    return get_store()
 
 
 @router.get("/watchlist")
 async def get_watchlist(request: Request):
     supabase = _watchlist_db()
+    session_id = request.headers.get("X-Session-Id", MOCK_USER_SESSION)
     try:
         response = (
             supabase.table("watchlist")
             .select("*")
-            .eq("user_session_id", MOCK_USER_SESSION)
+            .eq("user_session_id", session_id)
             .execute()
         )
     except Exception as e:
@@ -453,8 +510,9 @@ async def add_to_watchlist(request: Request, item: dict):
         raise HTTPException(status_code=400, detail="ticker and market are both required")
 
     supabase = _watchlist_db()
+    session_id = request.headers.get("X-Session-Id", MOCK_USER_SESSION)
     try:
-        data = {"ticker": ticker, "market": market, "user_session_id": MOCK_USER_SESSION}
+        data = {"ticker": ticker, "market": market, "user_session_id": session_id}
         supabase.table("watchlist").insert(data).execute()
     except Exception as e:
         # Postgres 23505: the (user_session_id, ticker) unique constraint fired.
@@ -471,11 +529,12 @@ async def add_to_watchlist(request: Request, item: dict):
 @router.delete("/watchlist/{ticker}")
 async def remove_from_watchlist(request: Request, ticker: str):
     supabase = _watchlist_db()
+    session_id = request.headers.get("X-Session-Id", MOCK_USER_SESSION)
     try:
         (
             supabase.table("watchlist")
             .delete()
-            .eq("user_session_id", MOCK_USER_SESSION)
+            .eq("user_session_id", session_id)
             .eq("ticker", ticker)
             .execute()
         )
@@ -485,6 +544,47 @@ async def remove_from_watchlist(request: Request, ticker: str):
 
     return {"status": "removed"}
 
+def _session_id(request: Request) -> str:
+    """Per-user identity without breaking existing clients.
+
+    Authenticated frontend sends X-Session-Id (Supabase user id).
+    Anything that does not send it keeps the legacy mock identity,
+    so watchlist/paper data remains reachable pre- and post-auth.
+    """
+    return request.headers.get("X-Session-Id", MOCK_USER_SESSION)
+
+
 @router.get("/alerts")
 async def get_alerts(request: Request):
-    return {"alerts": []}
+    """Live alerts: circuit-breaker flags + recent anomaly agent decisions."""
+    from services.realtime.anomaly import anomaly_watcher
+
+    alerts = [{"type": "circuit_breaker", "message": f} for f in anomaly_watcher.active_flags]
+    for d in reversed(anomaly_watcher.recent_decisions[-10:]):
+        alerts.append({"type": "anomaly", **d})
+    return {"alerts": alerts}
+
+
+@router.get("/portfolio/impact")
+async def get_portfolio_impact(request: Request):
+    """Wire the portfolio_impact_agent to real holdings + real events.
+
+    Holdings come from the user's open paper trades; events come from
+    the live Finnhub feed. The agent reasons over both via real tools
+    (no canned strings) and the raw decision is returned.
+    """
+    from services.agents.portfolio_impact import portfolio_impact_agent
+
+    session_id = _session_id(request)
+    prompt = (
+        f"Assess portfolio impact for user {session_id}. "
+        "Use get_user_holdings for their positions and "
+        "get_active_macro_events for the current macro backdrop, then "
+        "return position-specific impact assessments as JSON."
+    )
+    try:
+        decision = await portfolio_impact_agent.run(prompt)
+        return {"user_session_id": session_id, "impact": decision}
+    except Exception as e:
+        logger.error(f"Portfolio impact failed: {e}")
+        raise HTTPException(status_code=502, detail="Impact analysis unavailable")
