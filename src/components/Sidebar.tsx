@@ -24,6 +24,7 @@ export default function Sidebar() {
         { name: "Dashboard", href: "/dashboard", icon: "dashboard" },
         { name: "Live Events", href: "/events", icon: "feed" },
         { name: "AI Picks", href: "/picks", icon: "model_training" },
+        { name: "Backtest", href: "/backtest", icon: "science" },
       ]
     },
     {

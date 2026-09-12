@@ -5,7 +5,45 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { fetchEvents, fetchEventImpact } from "@/lib/api";
+import { fetchDashboard, fetchEvents, fetchEventImpact, type Market } from "@/lib/api";
+
+function ImpactCard({
+  ticker,
+  reason,
+  market,
+  side,
+  onOpen,
+}: {
+  ticker: string;
+  reason: string;
+  market: Market | null;
+  side: "benefic" | "pressure";
+  onOpen: (ticker: string, market: Market) => void;
+}) {
+  const accent = side === "benefic" ? "hover:border-tv-green" : "hover:border-tv-red";
+  if (!market) {
+    return (
+      <div
+        className={`p-3 bg-bg-primary border border-border-dark rounded transition-colors ${accent}`}
+        title="Market unknown for this ticker — no symbol page available"
+      >
+        <div className="font-bold text-text-primary mb-1">{ticker}</div>
+        <div className="text-xs text-text-secondary leading-tight">{reason}</div>
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`p-3 bg-bg-primary border border-border-dark rounded ${accent} cursor-pointer transition-colors`}
+      onClick={() => onOpen(ticker, market)}
+    >
+      <div className="font-bold text-text-primary mb-1">
+        {ticker} <span className="text-[10px] font-normal text-text-secondary">{market}</span>
+      </div>
+      <div className="text-xs text-text-secondary leading-tight">{reason}</div>
+    </div>
+  );
+}
 
 export default function EventsPage() {
   const router = useRouter();
@@ -23,6 +61,14 @@ export default function EventsPage() {
     queryKey: ['event_impact', selectedEventId],
     queryFn: () => fetchEventImpact(selectedEventId!),
     enabled: !!selectedEventId
+  });
+
+  // Live market pulse: real quotes, re-polled every 5s. These are observed
+  // prices, not predictions — nothing here forecasts.
+  const { data: pulseData, dataUpdatedAt: pulseUpdatedAt } = useQuery({
+    queryKey: ['market_pulse'],
+    queryFn: () => fetchDashboard(),
+    refetchInterval: 5000,
   });
 
   const getSeverityColor = (severity: string | null) => {
@@ -87,6 +133,40 @@ export default function EventsPage() {
 
       {/* RIGHT PANE (40%) */}
       <div className="flex-[4] flex flex-col bg-bg-secondary border border-border-dark rounded-xl overflow-hidden h-full">
+        {/* Live market pulse — real quotes, auto-refreshing */}
+        <div className="flex-shrink-0 border-b border-border-dark bg-bg-primary/60 px-4 py-3">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tv-green opacity-60"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-tv-green"></span>
+            </span>
+            <span className="text-xs font-bold text-text-primary uppercase tracking-wider">Live Market Pulse</span>
+            {pulseUpdatedAt > 0 && (
+              <span className="ml-auto text-[10px] text-text-secondary">
+                updated {new Date(pulseUpdatedAt).toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {(pulseData?.tickers ?? []).map((q) => {
+              const up = (q.change_percent ?? 0) >= 0;
+              return (
+                <div key={q.symbol} className="rounded-lg border border-border-dark bg-bg-secondary px-2.5 py-2">
+                  <div className="text-[10px] font-semibold text-text-secondary truncate">{q.symbol}</div>
+                  <div className="text-sm font-bold text-text-primary truncate">
+                    {q.currency_symbol}{q.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                  </div>
+                  <div className={`text-[11px] font-medium ${up ? 'text-tv-green' : 'text-tv-red'}`}>
+                    {up ? '▲' : '▼'} {up ? '+' : ''}{(q.change_percent ?? 0).toFixed(2)}%
+                  </div>
+                </div>
+              );
+            })}
+            {!pulseData?.tickers?.length && (
+              <div className="col-span-3 text-[11px] text-text-secondary">Connecting to live feed…</div>
+            )}
+          </div>
+        </div>
         {!selectedEventId ? (
           <div className="flex-1 flex items-center justify-center text-text-secondary flex-col gap-2">
             <span className="material-symbols-outlined text-4xl opacity-50">feed</span>
@@ -139,17 +219,25 @@ export default function EventsPage() {
               </svg>
             </div>
 
-            {/* Affected Stocks */}
+            {/* Affected Stocks.
+                A card links to the symbol page only when the impact engine
+                named a known market. Unknown-market tickers render as plain
+                cards: a link without a market hits the guard page, so no
+                link is offered rather than a wrong one. */}
             <div className="flex-1 p-4 grid grid-cols-2 gap-4">
               {/* Bullish */}
               <div>
                 <h3 className="text-xs font-bold text-tv-green mb-3 uppercase tracking-wider">Beneficiaries</h3>
                 <div className="space-y-2">
                   {eventImpact?.stocks?.beneficiaries?.map((b, i) => (
-                    <div key={i} className="p-3 bg-bg-primary border border-border-dark rounded hover:border-tv-green cursor-pointer transition-colors" onClick={() => router.push(`/symbol/${b.ticker}`)}>
-                      <div className="font-bold text-text-primary mb-1">{b.ticker}</div>
-                      <div className="text-xs text-text-secondary leading-tight">{b.reason}</div>
-                    </div>
+                    <ImpactCard
+                      key={i}
+                      ticker={b.ticker}
+                      reason={b.reason}
+                      market={b.market}
+                      side="benefic"
+                      onOpen={(t, m) => router.push(`/symbol/${encodeURIComponent(t)}?market=${m}`)}
+                    />
                   ))}
                 </div>
               </div>
@@ -159,10 +247,14 @@ export default function EventsPage() {
                 <h3 className="text-xs font-bold text-tv-red mb-3 uppercase tracking-wider">Pressure</h3>
                 <div className="space-y-2">
                   {eventImpact?.stocks?.pressure?.map((p, i) => (
-                    <div key={i} className="p-3 bg-bg-primary border border-border-dark rounded hover:border-tv-red cursor-pointer transition-colors" onClick={() => router.push(`/symbol/${p.ticker}`)}>
-                      <div className="font-bold text-text-primary mb-1">{p.ticker}</div>
-                      <div className="text-xs text-text-secondary leading-tight">{p.reason}</div>
-                    </div>
+                    <ImpactCard
+                      key={i}
+                      ticker={p.ticker}
+                      reason={p.reason}
+                      market={p.market}
+                      side="pressure"
+                      onOpen={(t, m) => router.push(`/symbol/${encodeURIComponent(t)}?market=${m}`)}
+                    />
                   ))}
                 </div>
               </div>

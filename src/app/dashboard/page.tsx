@@ -4,7 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { createChart, ColorType, CrosshairMode } from "lightweight-charts";
 import { motion } from "framer-motion";
-import { fetchDashboard, fetchHistory, type Market } from "@/lib/api";
+import Link from "next/link";
+import { fetchDashboard, fetchGlobal, fetchHistory, type Market } from "@/lib/api";
 
 // Each chart symbol carries its market explicitly. Market is never derived from
 // the shape of the ticker string.
@@ -25,6 +26,13 @@ export default function Dashboard() {
     queryKey: ['dashboard'],
     queryFn: fetchDashboard,
     refetchInterval: 20000,
+  });
+
+  // Global markets board: one live quote per region/asset
+  const { data: globalData } = useQuery({
+    queryKey: ['global'],
+    queryFn: fetchGlobal,
+    refetchInterval: 30000,
   });
 
   // Chart data
@@ -129,6 +137,12 @@ export default function Dashboard() {
                   {tf}
                 </button>
               ))}
+              <Link
+                href={`/symbol/${encodeURIComponent(chartSymbol.value)}?market=${chartSymbol.market}`}
+                className="ml-2 text-sm px-3 py-1.5 rounded bg-teal/15 border border-teal/40 text-teal font-medium hover:bg-teal/25 transition-colors whitespace-nowrap"
+              >
+                Trade {chartSymbol.label}
+              </Link>
             </div>
           </div>
           <div ref={chartContainerRef} className="flex-1 w-full min-h-[300px] relative" />
@@ -227,6 +241,28 @@ export default function Dashboard() {
             </div>
           </div>
           
+          {/* GLOBAL */}
+          <div>
+            <h3 className="text-xs font-semibold text-text-secondary mb-2">GLOBAL</h3>
+            <div className="space-y-1">
+              {!globalData?.markets?.length && (
+                <p className="text-xs text-text-secondary py-1.5">No quotes available.</p>
+              )}
+              {(globalData?.markets ?? []).map((t) => {
+                const isPos = t.change >= 0;
+                return (
+                  <div key={`${t.market}:${t.symbol}`} className="flex items-center justify-between py-1.5 hover:bg-bg-tertiary px-2 -mx-2 rounded transition-colors">
+                    <span className="text-sm font-medium">{t.symbol} <span className="text-[10px] text-text-secondary">{t.market}</span></span>
+                    <div className="flex items-center gap-4 text-sm mono">
+                      <span>{t.price?.toFixed(2)}</span>
+                      <span className={`w-16 text-right ${isPos ? 'positive' : 'negative'}`}>{isPos ? '+' : ''}{t.change_percent?.toFixed(2)}%</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
           {/* SECTOR MOMENTUM */}
           <div>
             <h3 className="text-xs font-semibold text-text-secondary mb-2">SECTOR MOMENTUM</h3>

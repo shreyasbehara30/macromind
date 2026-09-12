@@ -112,7 +112,11 @@ export default function Navbar() {
                         className="w-full flex items-center justify-between p-4 hover:bg-bg-tertiary border-b border-border-dark/50 transition-colors text-left"
                         onClick={() => {
                           setIsSearchOpen(false);
-                          router.push(`/symbol/${sym.ticker}`);
+                          // Carry the market so the symbol page can resolve the
+                          // ticker. Search results may have a null market (Finnhub
+                          // returns symbols not in the registry); when unknown we
+                          // navigate without it and the page correctly refuses.
+                          router.push(`/symbol/${sym.ticker}${sym.market ? `?market=${sym.market}` : ""}`);
                         }}
                       >
                         <div>

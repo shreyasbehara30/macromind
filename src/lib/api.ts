@@ -10,7 +10,9 @@
  * Do not call fetch() against the API directly from a component.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+import { getSessionId } from "./session";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
 export type Market = "NSE" | "BSE" | "US" | "CRYPTO" | "COMMODITY" | "FOREX";
 
@@ -62,6 +64,8 @@ export interface EventsResponse {
 export interface ImpactStock {
   ticker: string;
   reason: string;
+  /** Null when the engine named no known market: rendered without a link, never guessed. */
+  market: Market | null;
 }
 
 export interface EventImpactResponse {
@@ -188,9 +192,16 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // Per-user backend identity. Absent id => backend falls back to the shared
+  // mock session (legacy behaviour for unauthenticated callers).
+  const sid = getSessionId();
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(sid ? { "X-Session-Id": sid } : {}),
+      ...(init?.headers ?? {}),
+    },
   });
 
   if (!res.ok) {
@@ -217,6 +228,12 @@ export const fetchEvents = (page = 1, limit = 10) =>
 
 export const fetchEventImpact = (id: string) =>
   request<EventImpactResponse>(`/api/events/${id}/impact`);
+
+export interface GlobalMarketsResponse {
+  markets: Quote[];
+}
+
+export const fetchGlobal = () => request<GlobalMarketsResponse>(`/api/global`);
 
 export const fetchPicks = (market: string, horizon: string) =>
   request<PicksResponse>(`/api/picks`, {
@@ -267,3 +284,111 @@ export const closePaperTrade = (tradeId: string) =>
   request<{ status: string; trade: PaperTrade }>(`/api/paper/trades/${encodeURIComponent(tradeId)}`, {
     method: "DELETE",
   });
+
+export const resetPaperAccount = () =>
+  request<PaperPortfolioResponse>(`/api/paper/reset`, {
+    method: "POST",
+  });
+
+export interface BacktestMetrics {
+  total_return_pct: number;
+  buy_hold_return_pct: number;
+  num_trades: number;
+  win_rate_pct: number;
+  max_drawdown_pct: number;
+  sharpe_daily_annualised: number;
+}
+
+export interface BacktestTrade {
+  entry_time: number;
+  exit_time: number;
+  side: string;
+  entry: number;
+  exit: number;
+  pnl_pct: number;
+}
+
+export interface BacktestResponse {
+  ticker: string;
+  market: string;
+  strategy: string;
+  params: { fast: number; slow: number; cost_per_side_pct: number };
+  bars_used: number;
+  assumptions: string;
+  metrics: BacktestMetrics;
+  equity_curve: { time: number; value: number }[];
+  trades: BacktestTrade[];
+}
+
+export const runBacktest = (ticker: string, market: Market | string, strategy: string, fast: number, slow: number) =>
+  request<BacktestResponse>(`/api/backtest`, {
+    method: "POST",
+    body: JSON.stringify({ ticker, market, strategy, fast, slow }),
+  });
+
+export interface MonteCarloResponse {
+  ticker: string;
+  market: string;
+  last_close: number;
+  last_time: number;
+  days: number;
+  paths: number;
+  daily_vol_pct: number;
+  median_path: number[];
+  p10_path: number[];
+  p90_path: number[];
+  projected_median_pct: number;
+  projected_p10_pct: number;
+  projected_p90_pct: number;
+  disclaimer: string;
+}
+
+export const runMonteCarlo = (ticker: string, market: Market | string, days: number, paths: number) =>
+  request<MonteCarloResponse>(`/api/backtest/montecarlo`, {
+    method: "POST",
+    body: JSON.stringify({ ticker, market, days, paths }),
+  });
+
+export interface ProjectionResponse {
+  symbol: string;
+  market: string;
+  last_close: number;
+  times: number[];
+  projection: number[];
+  upper: number[];
+  lower: number[];
+  method: string;
+  disclaimer: string;
+}
+
+export const fetchProjection = (symbol: string, market: Market | string, days: number) =>
+  request<ProjectionResponse>(
+    `/api/backtest/projection?symbol=${encodeURIComponent(symbol)}&market=${encodeURIComponent(market)}&days=${days}`
+  );
+
+export interface DepthResponse {
+  symbol: string;
+  market: string;
+  bid: number;
+  ask: number;
+  bid_size: number;
+  ask_size: number;
+  spread: number;
+  spread_bps: number;
+  mid: number;
+  ladder_levels: boolean;
+  disclaimer: string;
+}
+
+export const fetchDepth = (symbol: string, market: Market | string) =>
+  request<DepthResponse>(
+    `/api/backtest/depth?symbol=${encodeURIComponent(symbol)}&market=${encodeURIComponent(market)}`
+  );
+
+export interface PortfolioImpactResponse {
+  user_session_id: string;
+  impact: string;
+}
+
+export const fetchPortfolioImpact = () =>
+  request<PortfolioImpactResponse>(`/api/portfolio/impact`);

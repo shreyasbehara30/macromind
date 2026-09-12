@@ -4,11 +4,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { fetchPaperPortfolio, fetchPaperTrades, closePaperTrade } from "@/lib/api";
+import { fetchPaperPortfolio, fetchPaperTrades, closePaperTrade, resetPaperAccount } from "@/lib/api";
 import { useQuotes, quoteKey } from "@/lib/useQuotes";
+import NewTradeTicket from "./NewTradeTicket";
 
 export default function PaperPortfolio() {
   const [activeTab, setActiveTab] = useState("positions");
+  const [ticketOpen, setTicketOpen] = useState(false);
 
   const { data: portfolio, refetch: refetchPortfolio } = useQuery({
     queryKey: ['paper_portfolio'],
@@ -24,8 +26,25 @@ export default function PaperPortfolio() {
 
   const closePosition = async (tradeId: string) => {
     try {
-      await closePaperTrade(tradeId);
-      toast.success("Position closed");
+      const res = await closePaperTrade(tradeId);
+      const pnl = res.trade.realized_pnl;
+      toast.success(
+        typeof pnl === "number"
+          ? `Closed at live mark. P&L ${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}`
+          : "Position closed"
+      );
+      refetchPortfolio();
+      refetchTrades();
+    } catch (e: any) {
+      toast.error(e.message);
+    }
+  };
+
+  const resetAccount = async () => {
+    if (!window.confirm("Reset the paper account? All trades will be deleted and the balance restored to $100,000.")) return;
+    try {
+      await resetPaperAccount();
+      toast.success("Account reset to $100,000");
       refetchPortfolio();
       refetchTrades();
     } catch (e: any) {
@@ -49,10 +68,16 @@ export default function PaperPortfolio() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-text-primary">Paper Portfolio</h1>
         <div className="flex gap-2">
-          <button className="bg-bg-tertiary border border-border-dark px-4 py-2 rounded text-sm hover:text-text-primary transition-colors text-text-secondary">
-            Settings
+          <button
+            onClick={() => setTicketOpen((v) => !v)}
+            className="bg-teal text-white px-4 py-2 rounded text-sm font-medium hover:bg-teal/90 transition-colors shadow-lg shadow-teal/20"
+          >
+            {ticketOpen ? "Close Ticket" : "New Trade"}
           </button>
-          <button className="bg-teal text-white px-4 py-2 rounded text-sm font-medium hover:bg-teal/90 transition-colors shadow-lg shadow-teal/20">
+          <button
+            onClick={resetAccount}
+            className="bg-bg-tertiary border border-border-dark px-4 py-2 rounded text-sm hover:text-text-primary transition-colors text-text-secondary"
+          >
             Reset Account
           </button>
         </div>
@@ -106,6 +131,17 @@ export default function PaperPortfolio() {
           </div>
         </div>
       </div>
+
+      {/* New-trade ticket with live chart */}
+      {ticketOpen && (
+        <NewTradeTicket
+          onPlaced={() => {
+            refetchPortfolio();
+            refetchTrades();
+            setTicketOpen(false);
+          }}
+        />
+      )}
 
       {/* Tables Section */}
       <div className="flex-1 bg-bg-secondary border border-border-dark rounded-xl overflow-hidden flex flex-col min-h-[300px]">

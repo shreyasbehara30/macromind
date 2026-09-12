@@ -12,6 +12,8 @@ import {
   fetchDetails,
   fetchHistory,
   fetchQuote,
+  fetchDepth,
+  fetchProjection,
   addToWatchlist as apiAddToWatchlist,
   openPaperTrade,
   type Market,
@@ -31,6 +33,7 @@ export default function SymbolDetail({ params }: { params: Promise<{ ticker: str
   const market = KNOWN_MARKETS.includes(marketParam as Market) ? (marketParam as Market) : null;
 
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const projChartRef = useRef<HTMLDivElement>(null);
   const [timeframe, setTimeframe] = useState("1D");
   const [isSimulateOpen, setIsSimulateOpen] = useState(false);
   const [tradeForm, setTradeForm] = useState({ side: "LONG", qty: 1, target: 0, stopLoss: 0 });
@@ -56,6 +59,45 @@ export default function SymbolDetail({ params }: { params: Promise<{ ticker: str
     queryFn: () => fetchHistory(ticker, market!, timeframe),
     enabled: market !== null,
   });
+
+  // Top-of-book + statistical projection (real quote feed math, labelled)
+  const { data: depth } = useQuery({
+    queryKey: ['depth', ticker, market],
+    queryFn: () => fetchDepth(ticker, market!),
+    enabled: market !== null,
+    retry: 1,
+    staleTime: 30000,
+  });
+  const { data: projection } = useQuery({
+    queryKey: ['projection', ticker, market],
+    queryFn: () => fetchProjection(ticker, market!, 30),
+    enabled: market !== null,
+    retry: 1,
+    staleTime: 300000,
+  });
+
+  useEffect(() => {
+    if (!projChartRef.current || !projection) return;
+    const chart = createChart(projChartRef.current, {
+      layout: { background: { type: ColorType.Solid, color: "#131722" }, textColor: "#787B86" },
+      grid: { vertLines: { color: "#2A2E39" }, horzLines: { color: "#2A2E39" } },
+      rightPriceScale: { borderColor: "#2A2E39" },
+      timeScale: { borderColor: "#2A2E39" },
+      autoSize: true,
+    });
+    const mk = (color: string, width: 1 | 2) => {
+      const s = chart.addLineSeries({ color, lineWidth: width });
+      return s;
+    };
+    const upper = mk("#787B86", 1);
+    const mid = mk("#0EA5C9", 2);
+    const lower = mk("#787B86", 1);
+    const rows = projection.times.map((t: number, i: number) => ({ time: t, upper: projection.upper[i], mid: projection.projection[i], lower: projection.lower[i] }));
+    upper.setData(rows.map((r: any) => ({ time: r.time, value: r.upper })) as any);
+    mid.setData(rows.map((r: any) => ({ time: r.time, value: r.mid })) as any);
+    lower.setData(rows.map((r: any) => ({ time: r.time, value: r.lower })) as any);
+    return () => chart.remove();
+  }, [projection]);
 
   // Setup Chart
   useEffect(() => {
@@ -308,6 +350,46 @@ export default function SymbolDetail({ params }: { params: Promise<{ ticker: str
                 </div>
               </DialogContent>
             </Dialog>
+          </div>
+
+          {/* Top of Book (best bid/ask only — no full ladder in this feed) */}
+          <div className="bg-bg-secondary border border-border-dark rounded-xl p-4">
+            <h3 className="font-semibold text-text-primary mb-3">Top of Book</h3>
+            {depth ? (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-tv-green mono font-bold">{depth.bid.toFixed(2)}</span>
+                  <span className="text-text-secondary text-xs">BID × {depth.bid_size || "—"}</span>
+                </div>
+                <div className="flex h-1.5 rounded overflow-hidden bg-bg-primary">
+                  <div
+                    className="bg-tv-green"
+                    style={{ width: `${depth.bid_size + depth.ask_size > 0 ? (depth.bid_size / (depth.bid_size + depth.ask_size)) * 100 : 50}%` }}
+                  />
+                  <div className="flex-1 bg-tv-red" />
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-tv-red mono font-bold">{depth.ask.toFixed(2)}</span>
+                  <span className="text-text-secondary text-xs">ASK × {depth.ask_size || "—"}</span>
+                </div>
+                <div className="flex justify-between text-xs text-text-secondary pt-1">
+                  <span>Spread {depth.spread.toFixed(2)} ({depth.spread_bps} bps)</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-text-secondary">No bid/ask in this feed for {ticker}.</p>
+            )}
+          </div>
+
+          {/* 30-day statistical baseline (not a trained model) */}
+          <div className="bg-bg-secondary border border-border-dark rounded-xl p-4">
+            <h3 className="font-semibold text-text-primary mb-1">Projection · 30d</h3>
+            <p className="text-[11px] text-text-secondary mb-2">Trend + volatility bands. Statistical baseline, not AI.</p>
+            {projection ? (
+              <div ref={projChartRef} className="w-full h-[160px] relative" />
+            ) : (
+              <p className="text-xs text-text-secondary">Not enough history for {ticker}.</p>
+            )}
           </div>
 
           {/* Key Statistics */}

@@ -76,13 +76,14 @@ export default function PicksPage() {
         </div>
       </div>
 
-      {/* Picks Table */}
+      {/* Picks Table (loading never blocks clicks: stale rows stay interactive) */}
       <div className="flex-1 overflow-auto border border-border-dark rounded-lg bg-bg-primary relative">
         {isFetching && (
-          <div className="absolute inset-0 bg-bg-primary/50 backdrop-blur-sm z-10 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal"></div>
+          <div className="absolute top-0 left-0 right-0 h-0.5 z-10 overflow-hidden pointer-events-none">
+            <div className="h-full w-1/3 bg-teal animate-[loadingbar_1s_linear_infinite]" />
           </div>
         )}
+        <style>{`@keyframes loadingbar { 0% { margin-left: -33%; } 100% { margin-left: 100%; } }`}</style>
         <table className="w-full text-sm text-left whitespace-nowrap">
           <thead className="text-xs text-text-secondary bg-bg-secondary sticky top-0 z-0">
             <tr>
